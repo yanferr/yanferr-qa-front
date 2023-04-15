@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta name="viewport"
+        content="width=device-width,height=device-height,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <!-- import CSS -->
+    <link rel="icon" type="image/x-icon" href="yanferr.ico" />
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<title>来嘛！</title>
+
+<body>
+    <div id="app">
+        <el-card shadow="always" :class="{'box-card-windows':!isPhone,'box-card-phone':isPhone}">
+            <div @click="click" class="submitdiv"></div>
+            <el-input class="inputQues" placeholder="输入问题" v-model="ques">
+            </el-input>
+            <br><br>
+            <br>
+            <el-radio-group v-if="isPhone" v-model="scene" size="small">
+                <el-radio-button label="interv"></el-radio-button>
+                <el-radio-button label="daily"></el-radio-button>
+                <el-radio-button label="debug"></el-radio-button>
+                <el-radio-button label="book"></el-radio-button>
+                <el-radio-button label="other"></el-radio-button>
+            </el-radio-group>
+            <el-radio-group v-if="!isPhone" v-model="scene" size="medium">
+                <el-radio-button label="interv"></el-radio-button>
+                <el-radio-button label="daily"></el-radio-button>
+                <el-radio-button label="debug"></el-radio-button>
+                <el-radio-button label="book"></el-radio-button>
+                <el-radio-button label="other"></el-radio-button>
+            </el-radio-group>
+            <br><br>
+            <br>
+            <el-input :rows="10" type="textarea" placeholder="输入答案" v-model="answer">
+            </el-input>
+            <div @click="back" class="submitdiv">
+            </div>
+        </el-card>
+        </el-form>
+    </div>
+</body>
+<script src="./js/axios.min.js"></script>
+<script src="./js/vue.js"></script>
+<script src="./js/index.js"></script>
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            //这里存放数据
+            return {
+                quesId: null,
+                answerId: null,
+                ques: "",
+                answer: "",
+                scene: "interv",
+                isPhone: false
+            };
+        },
+        methods: {
+            back() {
+                // http://yanferr.com:8080/qa/ques/save
+                axios.get('http://yanferr.com:8080/qa/ques/lasted')
+                    .then(res => {
+                        if (res && res.data.code === 0) {
+                            data = res.data.data,
+                                console.log(data),
+                                this.quesId = data.quesId,
+                                this.answerId = data.answerId,
+                                this.ques = data.ques,
+                                this.answer = data.answer,
+                                this.scene = data.scene;
+                            this.$message({
+                                center: true,
+                                message: '=>  已返回上一条数据 ',
+                                type: 'success'
+                            });
+                        } else {
+                            alert("返回上一条数据失败")
+                        }
+
+
+                    }).catch(function (error) {
+                        alert("返回上一条数据失败")
+                    });
+
+            },
+            submit() {
+                // http://yanferr.com:8080/qa/ques/save
+                axios.post('http://yanferr.com:8080/qa/ques/save', {
+                    quesId: this.quesId,
+                    answerId: this.answerId,
+                    ques: this.ques,
+                    scene: this.scene,
+                    answer: this.answer,
+                }).then(res => { // 必须要用箭头函数
+                    if (res && res.data.code === 0) {
+                        this.$message({
+                            message: '添加成功',
+                            type: 'success'
+                        });
+                        location.reload();
+                    } else {
+                        alert("添加失败")
+                    }
+                }).catch(function (error) {
+                    alert("添加失败")
+                });
+            },
+            click() {
+                if (this.ques.trim().length === 0) {
+                    this.$message({
+                        center: true,
+                        message: '=>  问题不能为空 ',
+                        type: 'error'
+                    });
+                    return;
+                }
+                if (this.answer.trim().length === 0) {
+                    this.$message({
+                        center: true,
+                        message: '=>  答案不能为空 ',
+                        type: 'error'
+                    });
+                    return;
+                }
+                this.submit();
+
+            },
+
+
+        },
+        mounted() {
+            if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
+                this.isPhone = true;
+                // window.location.href = "mindex.html";
+            } else {
+                this.isPhone = false;
+            }
+
+        }
+    })
+</script>
+<style scoped>
+    .box-card {
+        width: 480px;
+    }
+
+    body {
+        margin: 0 auto;
+    }
+
+
+    .box-card-windows {
+        margin: 10% auto 100px;
+        display: table;
+    }
+
+    .box-card-phone {
+        margin: 40% auto 100px;
+        display: table;
+    }
+
+    .submitdiv {
+        height: 25px;
+        width: auto;
+    }
+    .backdiv{
+        height: 25px;
+        width: auto;
+        margin-bottom: 0px;
+        padding: 0%;
+    }
+</style>
+
+</html>
