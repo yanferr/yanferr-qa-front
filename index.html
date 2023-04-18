@@ -15,7 +15,8 @@
 <body>
     <div id="app">
         <el-card shadow="always" :class="{'box-card-windows':!isPhone,'box-card-phone':isPhone}">
-            <div @click="click" class="submitdiv"></div>
+            <div @click="back" id="divtopleft" class="submitdiv"></div>
+            <div @click="front" id="divtopright" class="submitdiv"></div>
             <el-input class="inputQues" placeholder="输入问题" v-model="ques">
             </el-input>
             <br><br>
@@ -38,10 +39,9 @@
             <br>
             <el-input :rows="10" type="textarea" placeholder="输入答案" v-model="answer">
             </el-input>
-            <div @click="back" class="submitdiv">
-            </div>
+            <div @dblclick="toList" id="divbuttonleft" class="submitdiv"></div>
+            <div @click="clickToSubmit" id="divbuttonright" class="submitdiv"></div>
         </el-card>
-        </el-form>
     </div>
 </body>
 <script src="./js/axios.min.js"></script>
@@ -58,33 +58,94 @@
                 ques: "",
                 answer: "",
                 scene: "interv",
-                isPhone: false
+                isPhone: false,
+                pageIndex: -1 // 当前页为新增页
             };
         },
         methods: {
-            back() {
+
+            toList() {
+                // location.href="list.html"
+                // document.location.href = '/list.html?timestamp=' + Math.random();
+                document.location.href = '/list.html';
+
+            },
+            front() {
+                this.pageIndex = this.pageIndex - 1;
+                if (this.pageIndex < 0) {
+                    this.pageIndex = -1;
+                    this.$message({
+                        center: true,
+                        message: '已经到尽头啦！<( ￣^￣)(θ(θ☆( >_<',
+                        type: 'error'
+                    });
+                    return;
+                }
                 // http://yanferr.com:8080/qa/ques/save
-                axios.get('http://yanferr.com:8080/qa/ques/lasted')
+                axios.get('http://yanferr.com:8080/qa/ques/backOrFront', {
+                        params: {
+                            pageIndex: this.pageIndex,
+                        }
+                    })
                     .then(res => {
                         if (res && res.data.code === 0) {
-                            data = res.data.data,
-                                console.log(data),
-                                this.quesId = data.quesId,
-                                this.answerId = data.answerId,
-                                this.ques = data.ques,
-                                this.answer = data.answer,
-                                this.scene = data.scene;
+                            data = res.data.data;
+
+                            console.log(data);
+                            this.quesId = data.quesId;
+                            this.answerId = data.answerId;
+                            this.ques = data.ques;
+                            this.answer = data.answer;
+                            this.scene = data.scene;
                             this.$message({
                                 center: true,
-                                message: '=>  已返回上一条数据 ',
+                                message: '=>  已返回下一条 ',
                                 type: 'success'
                             });
                         } else {
+                            alert("返回下一条数据失败")
+                        }
+                    }).catch(function (error) {
+                        alert("返回下一条数据失败")
+                    });
+
+            },
+            back() {
+                this.pageIndex = this.pageIndex + 1;
+                // http://yanferr.com:8080/qa/ques/save
+                axios.get('http://yanferr.com:8080/qa/ques/backOrFront', {
+                        params: {
+                            pageIndex: this.pageIndex,
+                        }
+                    })
+                    .then(res => {
+                        if (res && res.data.code === 0) {
+                            if (res.data.data === null) {
+                                this.pageIndex = this.pageIndex - 1;
+                                this.$message({
+                                    center: true,
+                                    message: '已经到尽头啦！<( ￣^￣)(θ(θ☆( >_<',
+                                    type: 'error'
+                                });
+                            } else {
+                                data = res.data.data;
+                                console.log(data);
+                                this.quesId = data.quesId;
+                                this.answerId = data.answerId;
+                                this.ques = data.ques;
+                                this.answer = data.answer;
+                                this.scene = data.scene;
+                                this.$message({
+                                    center: true,
+                                    message: '<=  已返回上一条 ',
+                                    type: 'success'
+                                });
+                            }
+
+                        } else {
                             alert("返回上一条数据失败")
                         }
-
-
-                    }).catch(function (error) {
+                    }).catch(error => {
                         alert("返回上一条数据失败")
                     });
 
@@ -111,7 +172,7 @@
                     alert("添加失败")
                 });
             },
-            click() {
+            clickToSubmit() {
                 if (this.ques.trim().length === 0) {
                     this.$message({
                         center: true,
@@ -129,10 +190,7 @@
                     return;
                 }
                 this.submit();
-
             },
-
-
         },
         mounted() {
             if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
@@ -146,6 +204,16 @@
     })
 </script>
 <style scoped>
+    .el-card {
+        border-radius: 10px;
+    }
+
+    .el-card__body,
+    .el-main {
+        padding: 20px;
+        padding-top: 0px;
+    }
+
     .box-card {
         width: 480px;
     }
@@ -166,14 +234,35 @@
     }
 
     .submitdiv {
-        height: 25px;
+        height: 45px;
         width: auto;
     }
-    .backdiv{
+
+    .backdiv {
         height: 25px;
         width: auto;
         margin-bottom: 0px;
         padding: 0%;
+    }
+
+    #divtopright {
+        float: left;
+        width: 50%;
+    }
+
+    #divtopleft {
+        float: left;
+        width: 50%;
+    }
+
+    #divbuttonleft {
+        float: left;
+        width: 50%;
+    }
+
+    #divbuttonright {
+        float: left;
+        width: 50%;
     }
 </style>
 

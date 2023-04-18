@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta name="viewport"
+        content="width=device-width,height=device-height,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <!-- import CSS -->
+    <link rel="icon" type="image/x-icon" href="yanferr.ico" />
+    <link rel="stylesheet" href="css/index.css">
+    <title>看嘛！</title>
+</head>
+
+<body>
+    <div id="app" @dblclick="dblclick">
+        <el-card shadow="always" :class="{'box-card-windows':!isPhone,'box-card-phone':isPhone}">
+            <el-table @row-click="rowClick" stripe :data="tableData" style="width: 100%">
+                <el-table-column :show-overflow-tooltip="true" prop="ques">
+                </el-table-column>
+                <el-table-column prop="createTime" :render-header="(h, obj) => renderHeader(h, obj)" width="98px">
+                </el-table-column>
+            </el-table>
+        </el-card>
+        <el-drawer :with-header="false" :visible.sync="drawer" :direction="direction">
+            <el-input class="inputQues" placeholder="输入问题" v-model="ques">
+            </el-input>
+            <br><br>
+            <br>
+            <el-radio-group v-if="isPhone" v-model="scene" size="small">
+                <el-radio-button label="interv"></el-radio-button>
+                <el-radio-button label="daily"></el-radio-button>
+                <el-radio-button label="debug"></el-radio-button>
+                <el-radio-button label="book"></el-radio-button>
+                <el-radio-button label="other"></el-radio-button>
+            </el-radio-group>
+            <el-radio-group v-if="!isPhone" v-model="scene" size="medium">
+                <el-radio-button label="interv"></el-radio-button>
+                <el-radio-button label="daily"></el-radio-button>
+                <el-radio-button label="debug"></el-radio-button>
+                <el-radio-button label="book"></el-radio-button>
+                <el-radio-button label="other"></el-radio-button>
+            </el-radio-group>
+            <br><br>
+            <br>
+            <el-input :rows="10" type="textarea" placeholder="输入答案" v-model="answer">
+            </el-input>
+            <div @click="clickToSubmit" class="submitdiv"></div>
+            <el-backtop target=".page-component__scroll .el-scrollbar__wrap"></el-backtop>
+        </el-drawer>
+        <!-- <transition enter-active-class="animate__animated animate__fadeIn"
+            leave-active-class="animate__animated animate__fadeOut">
+            <div class="fixedSearch" v-show="showFixedSearch">
+                <input class="searchBox">
+            </div>
+        </transition> -->
+        <div class="fixedSearch" v-show="showFixedSearch">
+            <input class="searchBox"/>
+        </div>
+
+    </div>
+</body>
+<script src="./js/axios.min.js"></script>
+<script src="./js/vue.js"></script>
+<script src="./js/index.js"></script>
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            //这里存放数据
+            return {
+                direction: "",
+                drawer: false,
+                search: '',
+                tableData: [],
+                quesId: null,
+                answerId: null,
+                ques: "",
+                answer: "",
+                scene: "interv",
+                isPhone: false,
+                pageIndex: -1, // 当前页为新增页
+                showFixedSearch: false
+            };
+        },
+        // 修改答案
+        updateAnswer() {
+            axios.post('http://yanferr.com:8080/qa/answer/update', {
+                answerId: this.answerId,
+                answer: this.answer
+            }).then(res => {
+                if (res && res.data.code === 0) {
+                    this.$message({
+                        showClose: true,
+                        message: '修改成功',
+                        type: 'success'
+                    });
+                } else {
+                    this.$message({
+                        showClose: true,
+                        message: res.data.data,
+                        type: 'error'
+                    })
+                };
+                this.showAnswerDialog = false;
+            }).catch(function (error) {
+                console.log(error);
+            });
+        },
+        methods: {
+            rightClick() {
+                alert("dsf")
+            },
+            dblclick() {
+                document.location.href = '/index.html';
+            },
+            submit() {
+                // http://yanferr.com:8080/qa/ques/save
+                axios.post('http://yanferr.com:8080/qa/ques/save', {
+                    quesId: this.quesId,
+                    answerId: this.answerId,
+                    ques: this.ques,
+                    scene: this.scene,
+                    answer: this.answer,
+                }).then(res => { // 必须要用箭头函数
+                    if (res && res.data.code === 0) {
+                        this.$message({
+                            message: '添加成功',
+                            type: 'success'
+                        });
+                        location.reload();
+                    } else {
+                        alert("添加失败")
+                    }
+                }).catch(function (error) {
+                    alert("添加失败")
+                });
+            },
+            clickToSubmit() {
+                if (this.ques.trim().length === 0) {
+                    this.$message({
+                        center: true,
+                        message: '=>  问题不能为空 ',
+                        type: 'error'
+                    });
+                    return;
+                }
+                if (this.answer.trim().length === 0) {
+                    this.$message({
+                        center: true,
+                        message: '=>  答案不能为空 ',
+                        type: 'error'
+                    });
+                    return;
+                }
+                this.submit();
+            },
+            getDataList() {
+                axios.get('http://yanferr.com:8080/qa/ques/list')
+                    .then(response => {
+                        this.tableData = response.data.page.list;
+
+                        console.log(this.tableData)
+                    })
+                    .catch(function (error) { // 请求失败处理
+                        console.log(error);
+                    });
+            },
+            //行单击事件
+            rowClick(row, column, event) {
+                this.quesId = row.quesId;
+                this.drawer = true;
+                this.answerId = row.answerId;
+                this.ques = row.ques;
+                this.getAnswerById(this.answerId);
+                return false;
+            },
+            getAnswerById(answerId) {
+                axios.get(`http://yanferr.com:8080/qa/answer/info/${answerId}`)
+                    .then(response => (
+                        this.answer = response.data.answer.answer
+                    ))
+                    .catch(function (error) { // 请求失败处理
+                        console.log(error);
+                    });
+            },
+            showSearch() {
+                // 获取当前滚动条向下滚动的距离
+                let scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+                // 当页面滚动到高度300px处时，显示搜索框
+                if (scrollTop > 300) {
+                    this.showFixedSearch = true;
+                } else {
+                    this.showFixedSearch = false;
+                }
+            },
+        },
+        mounted() {
+            this.getDataList();
+
+            if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
+                this.isPhone = true;
+                this.direction = "btt"; // 抽屉方向
+                // window.location.href = "mindex.html";
+            } else {
+                this.isPhone = false;
+                this.direction = "rtl";
+            }
+            // 监听页面滚动事件
+            window.addEventListener("scroll", this.showSearch);
+
+        }
+    })
+</script>
+<style scoped>
+    .el-card {
+        border-radius: 40px;
+    }
+
+    .el-card__body,
+    .el-main {
+        width: 89%;
+    }
+
+    .box-card-windows {
+        margin: 1% auto 100px;
+        display: table;
+    }
+
+    .box-card-phone {
+        margin: 5% auto 100px;
+        display: table;
+    }
+
+    .el-drawer__body {
+        padding: 15px;
+        width: 93%;
+    }
+
+    .submitdiv {
+        height: 45px;
+        width: auto;
+        margin-top: 20px;
+    }
+
+    .fixedSearch {
+        position: fixed;
+        width: 100%;
+        z-index: 999;
+        background: #f6f6f6;
+        height: 120px;
+        overflow: hidden;
+    }
+
+    .searchBox {
+        position: absolute;
+        top: -100px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+</style>
+
+</html>
