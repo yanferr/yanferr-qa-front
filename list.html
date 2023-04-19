@@ -16,21 +16,17 @@
 
 <body>
     <div id="app" @dblclick="dblclick">
-        <div v-show="showFixedSearch" class="search" style="z-index:999;margin:0px auto;">
-            <el-input placeholder="请输入内容" v-model="input3" class="input-with-select">
-                <el-select v-model="select" slot="prepend" placeholder="请选择">
-                    <el-option label="餐厅名" value="1"></el-option>
-                    <el-option label="订单号" value="2"></el-option>
-                    <el-option label="用户电话" value="3"></el-option>
-                </el-select>
-                <el-button slot="append" icon="el-icon-search"></el-button>
-            </el-input>
+        <div class="search" style="z-index:999;margin:0px auto;">
+            <input @keyup.esc="esc" v-model="search" @keyup.enter="enter" class="search" />
         </div>
         <el-card shadow="always" :class="{'box-card-windows':!isPhone,'box-card-phone':isPhone}">
-            <el-table @row-click="rowClick" stripe :data="tableData" style="width: 100%">
+            <el-table :show-header="false" @select="selectChange" @row-click="rowClick" stripe :data="tableData"
+                style="width: 100%">
+                <el-table-column :show-overflow-tooltip="true" type="selection" width="30">
+                </el-table-column>
                 <el-table-column :show-overflow-tooltip="true" prop="ques">
                 </el-table-column>
-                <el-table-column prop="createTime" :render-header="(h, obj) => renderHeader(h, obj)" width="98px">
+                <el-table-column prop="createTime" width="98px">
                 </el-table-column>
             </el-table>
         </el-card>
@@ -77,16 +73,14 @@
 <script src="./js/axios.min.js"></script>
 <script src="./js/vue.js"></script>
 <script src="./js/index.js"></script>
+<script src="./js/jquery-1.11.3.js"></script>
 <script>
     new Vue({
         el: '#app',
         data() {
             //这里存放数据
             return {
-                input1: '',
-                input2: '',
-                input3: '',
-                select: '',
+                search: "",
                 direction: "",
                 drawer: false,
                 search: '',
@@ -98,11 +92,75 @@
                 scene: "interv",
                 isPhone: false,
                 pageIndex: -1, // 当前页为新增页
-                showFixedSearch: false
+                showFixedSearch: false,
+                selectIds: [] // 选中的row
             };
         },
 
         methods: {
+            selectChange(selected) {
+                this.selectIds = [];
+                for (var i = 0; i < selected.length; i++) {
+                    this.selectIds.push(selected[i].quesId);
+                }
+            },
+            // input监听enter
+            enter() {
+                if (this.search === "del") {
+                    console.log(this.selectIds);
+                    this.deleteBatch();
+                } else {
+                    alert("dsfdf")
+                    // this.search();
+                }
+            },
+            search() {
+
+
+
+
+            },
+            deleteBatch() {
+                if (this.selectIds.length === 0) {
+                    this.$message({
+                        message: '请选择数据',
+                        type: 'error'
+                    });
+                    return;
+                }
+                axios.post("http://yanferr.com:8080/qa/ques/delete",
+                        JSON.stringify(this.selectIds), {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                    .then(res => {
+                        if (res && res.data.code === 0) {
+                            this.$message({
+                                showClose: true,
+                                message: '删除成功',
+                                type: 'success'
+                            });
+                            this.search = "";
+                            this.getDataList();
+                        } else {
+                            console.log(res)
+                            this.$message({
+                                showClose: true,
+                                message: res.data.data,
+                                type: 'error'
+                            })
+                        };
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
+
+                this.getDataList();
+            },
+            // input监听esc
+            esc() {
+                this.search = "";
+            },
             // 修改答案
             updateAnswer() {
                 axios.post('http://yanferr.com:8080/qa/answer/update', {
@@ -207,7 +265,7 @@
                 // 获取当前滚动条向下滚动的距离
                 let scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
                 // 当页面滚动到高度300px处时，显示搜索框
-                if (scrollTop >100) {
+                if (scrollTop > 50) {
                     this.showFixedSearch = true;
                 } else {
                     this.showFixedSearch = false;
@@ -217,16 +275,23 @@
         mounted() {
             this.getDataList();
 
+
+
             if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
                 this.isPhone = true;
                 this.direction = "btt"; // 抽屉方向
                 // window.location.href = "mindex.html";
+
             } else {
                 this.isPhone = false;
                 this.direction = "rtl";
+                $(document).ready(function () {
+                    $(".el-card__body,.el-main").css("width", "95%");
+                });
             }
             // 监听页面滚动事件
-            window.addEventListener("scroll", this.showSearch);
+            // window.addEventListener("scroll", this.showSearch);
+
 
         }
     })
@@ -270,9 +335,27 @@
         background-color: #fff;
     }
 
+    .toindex {
+        height: 10px;
+        width: 10px;
+        display: block;
+    }
+
+    input {
+        border-top: none;
+        border-left: none;
+        border-right: none;
+        outline: none;
+        /* 光标消失 */
+        color: transparent;
+        text-shadow: 0px 0px 0px #333;
+    }
+
+
     .search {
         position: fixed;
-        left: 38%;
+        left: 55%;
+        border: #fff;
     }
 </style>
 
