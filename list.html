@@ -19,7 +19,7 @@
         <div class="search"  @dblclick="dblclick" style="z-index:999;margin:0px auto;">
             <input @keyup.esc="esc" v-model="search" @keyup.enter="enter" class="search" />
         </div>
-        <el-card shadow="always" :class="{'box-card-windows':!isPhone,'box-card-phone':isPhone}">
+        <el-card v-if="!isPhone" shadow="always" :class="{'box-card-windows':!isPhone,'box-card-phone':isPhone}">
             <el-table :show-header="false" @select="selectChange" @row-dblclick="rowClick" stripe :data="tableData"
                 style="width: 100%">
                 <el-table-column :show-overflow-tooltip="true" type="selection" width="30">
@@ -30,6 +30,15 @@
                 </el-table-column> -->
             </el-table>
         </el-card>
+        <el-table v-if="isPhone" :show-header="false" @select="selectChange" @row-dblclick="rowClick" stripe :data="tableData"
+                style="width: 100%">
+                <el-table-column :show-overflow-tooltip="true" type="selection" width="30">
+                </el-table-column>
+                <el-table-column :show-overflow-tooltip="true" prop="ques">
+                </el-table-column>
+                <!-- <el-table-column v-show="false" prop="createTime" width="98px">
+                </el-table-column> -->
+            </el-table>
         <el-drawer size="35%" :with-header="false" :visible.sync="drawer" :direction="direction">
             <el-input class="inputQues" placeholder="输入问题" v-model="ques">
             </el-input>
@@ -233,7 +242,6 @@
                 axios.get('http://yanferr.com:8080/qa/ques/list')
                     .then(response => {
                         this.tableData = response.data.page.list;
-
                         console.log(this.tableData)
                     })
                     .catch(function (error) { // 请求失败处理
@@ -245,15 +253,16 @@
                 this.quesId = row.quesId;
                 this.drawer = true;
                 this.answerId = row.answerId;
+                this.scene = row.scene;
                 this.ques = row.ques;
                 this.getAnswerById(this.answerId);
                 return false;
             },
             getAnswerById(answerId) {
                 axios.get(`http://yanferr.com:8080/qa/answer/info/${answerId}`)
-                    .then(response => (
-                        this.answer = response.data.answer.answer
-                    ))
+                    .then(response => {
+                        this.answer = response.data.answer.answer;
+                    })
                     .catch(function (error) { // 请求失败处理
                         console.log(error);
                     });
