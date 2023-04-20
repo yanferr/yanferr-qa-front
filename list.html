@@ -15,22 +15,22 @@
 </head>
 
 <body>
-    <div id="app" @dblclick="dblclick">
-        <div class="search" style="z-index:999;margin:0px auto;">
+    <div id="app">
+        <div class="search"  @dblclick="dblclick" style="z-index:999;margin:0px auto;">
             <input @keyup.esc="esc" v-model="search" @keyup.enter="enter" class="search" />
         </div>
         <el-card shadow="always" :class="{'box-card-windows':!isPhone,'box-card-phone':isPhone}">
-            <el-table :show-header="false" @select="selectChange" @row-click="rowClick" stripe :data="tableData"
+            <el-table :show-header="false" @select="selectChange" @row-dblclick="rowClick" stripe :data="tableData"
                 style="width: 100%">
                 <el-table-column :show-overflow-tooltip="true" type="selection" width="30">
                 </el-table-column>
                 <el-table-column :show-overflow-tooltip="true" prop="ques">
                 </el-table-column>
-                <el-table-column prop="createTime" width="98px">
-                </el-table-column>
+                <!-- <el-table-column v-show="false" prop="createTime" width="98px">
+                </el-table-column> -->
             </el-table>
         </el-card>
-        <el-drawer :with-header="false" :visible.sync="drawer" :direction="direction">
+        <el-drawer size="35%" :with-header="false" :visible.sync="drawer" :direction="direction">
             <el-input class="inputQues" placeholder="输入问题" v-model="ques">
             </el-input>
             <br><br>
@@ -65,9 +65,6 @@
         </transition> -->
 
 
-    </div>
-    <div class="fixedSearch">
-        <input class="searchBox" />
     </div>
 </body>
 <script src="./js/axios.min.js"></script>
@@ -115,7 +112,7 @@
                 }
             },
             search() {
-
+                
 
 
 
