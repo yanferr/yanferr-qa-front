@@ -21,7 +21,14 @@
             </el-input>
             <br><br>
             <br>
-            <el-radio-group v-if="isPhone" v-model="scene" size="small">
+            <el-select :default-first-option="true" v-model="optionsValue" multiple filterable allow-create default-first-option
+                placeholder="选择标签" autocomplete style="width:400px" >
+                <el-option v-for="item in labels" :key="item.labelId" :label="item.labelName"
+                    :value="item.labelName" >
+                </el-option>
+            </el-select>
+
+            <!-- <el-radio-group v-if="isPhone" v-model="scene" size="small">
                 <el-radio-button label="interv"></el-radio-button>
                 <el-radio-button label="daily"></el-radio-button>
                 <el-radio-button label="debug"></el-radio-button>
@@ -34,7 +41,7 @@
                 <el-radio-button label="debug"></el-radio-button>
                 <el-radio-button label="book"></el-radio-button>
                 <el-radio-button label="other"></el-radio-button>
-            </el-radio-group>
+            </el-radio-group> -->
             <br><br>
             <br>
             <el-input :rows="10" type="textarea" placeholder="输入答案" v-model="answer">
@@ -53,6 +60,8 @@
         data() {
             //这里存放数据
             return {
+                labels: [],
+                optionsValue: [],
                 quesId: null,
                 answerId: null,
                 ques: "",
@@ -76,7 +85,7 @@
                     this.pageIndex = -1;
                     this.$message({
                         center: true,
-                        message: '已经到尽头啦！<( ￣^￣)(θ(θ☆( >_<',
+                        message: '<( ￣^￣)(θ(θ☆( >_< 到头啦！',
                         type: 'error'
                     });
                     return;
@@ -97,11 +106,11 @@
                             this.ques = data.ques;
                             this.answer = data.answer;
                             this.scene = data.scene;
-                            this.$message({
-                                center: true,
-                                message: '=>  已返回下一条 ',
-                                type: 'success'
-                            });
+                            // this.$message({
+                            //     center: true,
+                            //     message: '=>  已返回下一条 ',
+                            //     type: 'success'
+                            // });
                         } else {
                             alert("返回下一条数据失败")
                         }
@@ -124,7 +133,7 @@
                                 this.pageIndex = this.pageIndex - 1;
                                 this.$message({
                                     center: true,
-                                    message: '已经到尽头啦！<( ￣^￣)(θ(θ☆( >_<',
+                                    message: '<( ￣^￣)(θ(θ☆( >_< 到头啦！',
                                     type: 'error'
                                 });
                             } else {
@@ -135,13 +144,12 @@
                                 this.ques = data.ques;
                                 this.answer = data.answer;
                                 this.scene = data.scene;
-                                this.$message({
-                                    center: true,
-                                    message: '<=  已返回上一条 ',
-                                    type: 'success'
-                                });
+                                // this.$message({
+                                //     center: true,
+                                //     message: '<=  已返回上一条 ',
+                                //     type: 'success'
+                                // });
                             }
-
                         } else {
                             alert("返回上一条数据失败")
                         }
@@ -150,14 +158,30 @@
                     });
 
             },
+            loadLabels() {
+                axios.get('http://localhost:8080/qa/label/list')
+                .then(res => {
+                    
+                    if (res && res.data.code === 0) {
+                        
+                        // console.log(res.data.page.list);
+                        this.labels=res.data.page.list;
+                        console.log(this.labels);
+                    } else {
+                        alert("标签数据加载失败")
+                    }
+                })
+            },
             submit() {
+                alert(this.optionsValue)
                 // http://yanferr.com:8080/qa/ques/save
-                axios.post('http://yanferr.com:8080/qa/ques/save', {
+                axios.post('http://localhost:8080/qa/ques/save', {
                     quesId: this.quesId,
                     answerId: this.answerId,
                     ques: this.ques,
                     scene: this.scene,
                     answer: this.answer,
+                    labelNames: this.optionsValue
                 }).then(res => { // 必须要用箭头函数
                     if (res && res.data.code === 0) {
                         this.$message({
@@ -193,29 +217,36 @@
             },
         },
         mounted() {
+            this.loadLabels();
             if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
                 this.isPhone = true;
                 // window.location.href = "mindex.html";
             } else {
                 this.isPhone = false;
+                // $(document).ready(function () {
+                //     $(".el-input__inner").css("width", "450px");
+                // });
+                
             }
-
         }
     })
 </script>
 <style scoped>
+    @import url("//unpkg.com/element-ui@2.15.6/lib/theme-chalk/index.css");
     .el-card {
         border-radius: 10px;
     }
 
     .el-card__body,
     .el-main {
+        width: 400px;
         padding: 20px;
         padding-top: 0px;
     }
 
     .box-card {
         width: 480px;
+
     }
 
     body {
@@ -224,6 +255,7 @@
 
 
     .box-card-windows {
+    
         margin: 10% auto 100px;
         display: table;
     }
