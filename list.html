@@ -20,8 +20,8 @@
             <input @keyup.esc="esc" v-model="search" @keyup.enter="enter" class="search" />
         </div>
         <el-card v-if="!isPhone" shadow="always" :class="{'box-card-windows':!isPhone,'box-card-phone':isPhone}">
-            <el-table :show-header="false" @select="selectChange" @row-dblclick="rowClick" stripe :data="tableData"
-                style="width: 100%">
+            <el-table :show-header="false" :row-class-name="tableRowClassName" @select="selectChange"
+                @row-dblclick="rowClick" :data="tableData" style="width: 100%">
                 <el-table-column :show-overflow-tooltip="true" type="selection" width="30">
                 </el-table-column>
                 <el-table-column :show-overflow-tooltip="true" prop="ques">
@@ -30,21 +30,23 @@
                 </el-table-column> -->
             </el-table>
         </el-card>
-        <el-table v-if="isPhone" :show-header="false" @select="selectChange" @row-dblclick="rowClick" stripe
-            :data="tableData" style="width: 100%">
-            <el-table-column :show-overflow-tooltip="true" type="selection" width="30">
+        <el-table v-if="isPhone" :row-class-name="tableRowClassName" :show-header="false" @select="selectChange"
+            @row-dblclick="rowClick" :data="tableData" style="width: 100%">
+            <el-table-column :show-overflow-tooltip="true" type="selection" width="30px">
             </el-table-column>
             <el-table-column :show-overflow-tooltip="true" prop="ques">
             </el-table-column>
             <!-- <el-table-column v-show="false" prop="createTime" width="98px">
                 </el-table-column> -->
         </el-table>
-        <el-drawer size="35%" :with-header="false" :visible.sync="drawer" :direction="direction">
+
+        <el-dialog :close-on-click-modal="false" :visible.sync="drawer" :fullscreen="isPhone" width="30%" center>
             <el-input class="inputQues" placeholder="输入问题" v-model="ques">
             </el-input>
             <br><br>
             <br>
-            <el-radio-group v-if="isPhone" v-model="scene" size="small">
+            </el-input>
+            <!-- <el-radio-group v-if="isPhone" v-model="scene" size="small">
                 <el-radio-button label="interv"></el-radio-button>
                 <el-radio-button label="daily"></el-radio-button>
                 <el-radio-button label="debug"></el-radio-button>
@@ -57,15 +59,27 @@
                 <el-radio-button label="debug"></el-radio-button>
                 <el-radio-button label="book"></el-radio-button>
                 <el-radio-button label="other"></el-radio-button>
-            </el-radio-group>
+            </el-radio-group> -->
+
+            <el-select :default-first-option="true" v-model="optionsValue" multiple filterable allow-create
+                default-first-option placeholder="选择标签" autocomplete style="width:400px">
+                <el-option v-for="item in labels" :key="item.labelId" :label="item.labelName" :value="item.labelName">
+                </el-option>
+            </el-select>
             <br><br>
             <br>
             <el-input :rows="10" type="textarea" placeholder="输入答案" v-model="answer">
             </el-input>
-            <div @click="clickToSubmit" class="submitdiv"></div>
-            <el-backtop target=".page-component__scroll .el-scrollbar__wrap">
-            </el-backtop>
-        </el-drawer>
+            <div @dblclick="clickToSubmit" class="submitdiv"></div>
+
+            <div @click="clickclose">
+                创建问题时间：{{this.createTime}}
+                <br>
+                最后一次修改：{{this.updateTime}}
+                <br>
+                当前记忆等级：Lv.{{this.memoryLevel}}
+            </div>
+        </el-dialog>
     </div>
 </body>
 <script src="./js/axios.min.js"></script>
@@ -78,24 +92,46 @@
         data() {
             //这里存放数据
             return {
+                labels: [],
+                memoryLevel:"",
+                optionsValue: [],
                 search: "",
-                direction: "",
                 drawer: false,
                 search: '',
                 tableData: [],
                 quesId: null,
                 answerId: null,
+                createTime: "",
+                updateTime: "",
                 ques: "",
                 answer: "",
                 scene: "interv",
                 isPhone: false,
                 pageIndex: -1, // 当前页为新增页
                 showFixedSearch: false,
-                selectIds: [] // 选中的row
+                selectIds: [], // 选中的row
             };
         },
 
         methods: {
+
+            tableRowClassName({
+                row,    
+                rowIndex
+            }) {
+                if (row.highLight === 1) {
+                    return 'warning-row'
+                } else if (row.highLight === 2) {
+                    return 'delay-row'
+                } else {
+                    return '';
+                }
+
+            },
+
+            clickclose() {
+                this.drawer = false;
+            },
             selectChange(selected) {
                 this.selectIds = [];
                 for (var i = 0; i < selected.length; i++) {
@@ -105,9 +141,8 @@
             // input监听enter
             enter() {
                 if (this.search === "del") {
-                    console.log(this.selectIds);
                     this.deleteBatch();
-                } else {  // 如果是数字，包括小数点
+                } else { // 如果是数字，包括小数点
                     this.searchQ();
                 }
             },
@@ -118,12 +153,9 @@
                         }
                     })
                     .then(response => {
-                        console.log(response)
                         this.tableData = response.data.data;
-                        console.log(this.tableData)
                     })
                     .catch(function (error) { // 请求失败处理
-                        console.log(error);
                     });
             },
             deleteBatch() {
@@ -150,7 +182,6 @@
                             this.search = "";
                             this.getDataList();
                         } else {
-                            console.log(res)
                             this.$message({
                                 showClose: true,
                                 message: res.data.data,
@@ -198,6 +229,7 @@
                 document.location.href = '/index.html';
             },
             submit() {
+                this.optionsValue = this.optionsValue.filter(item => item != null)
                 // http://yanferr.com:8080/qa/ques/save
                 axios.post('http://yanferr.com:8080/qa/ques/save', {
                     quesId: this.quesId,
@@ -205,6 +237,7 @@
                     ques: this.ques,
                     scene: this.scene,
                     answer: this.answer,
+                    labelNames: this.optionsValue
                 }).then(res => { // 必须要用箭头函数
                     if (res && res.data.code === 0) {
                         this.$message({
@@ -239,7 +272,7 @@
                 this.submit();
             },
             getDataList() {
-                axios.get('http://yanferr.com:8080/qa/ques/list')
+                axios.get('http://localhost:8080/qa/ques/list')
                     .then(response => {
                         this.tableData = response.data.page.list;
                         console.log(this.tableData)
@@ -248,15 +281,57 @@
                         console.log(error);
                     });
             },
+            loadLabels() {
+                axios.get('http://yanferr.com:8080/qa/label/list')
+                    .then(res => {
+                        if (res && res.data.code === 0) {
+                            // console.log(res.data.page.list);
+                            this.labels = res.data.page.list;
+                        } else {
+                            alert("标签数据加载失败")
+                        }
+                    })
+            },
+            lablesWithQuesId(quesId) {
+                axios.get(`http://yanferr.com:8080/qa/label/labels/${quesId}`)
+
+                    .then(res => {
+                        var data = res.data.data;
+                        for (var i = 0; i < res.data.data.length; i++) {
+                            this.optionsValue.push(data[i].labelName);
+                        }
+                    })
+                    .catch(function (error) { // 请求失败处理
+                        console.log(error);
+                    });
+                console.log(this.optionsValue)
+
+            },
             //行单击事件
             rowClick(row, column, event) {
+                this.optionsValue = [];
+                this.loadLabels();
+                this.lablesWithQuesId(row.quesId);
                 this.quesId = row.quesId;
                 this.drawer = true;
                 this.answerId = row.answerId;
                 this.scene = row.scene;
                 this.ques = row.ques;
+                this.createTime = row.createTime;
+                this.updateTime = row.updateTime;
                 this.getAnswerById(this.answerId);
-                return false;
+                this.memoryLevel = row.memoryLevel;
+                // 更新lastView、重新计算highLight
+                this.updateHighLight(this.quesId);
+            },
+            updateHighLight(quesId) {
+                axios.get(`http://localhost:8080/qa/ques/updateHighLight/${quesId}`)
+                    .then(response => {
+
+                    })
+                    .catch(function (error) { // 请求失败处理
+                        alert("lastView更新失败")
+                    });
             },
             getAnswerById(answerId) {
                 axios.get(`http://yanferr.com:8080/qa/answer/info/${answerId}`)
@@ -281,35 +356,31 @@
         mounted() {
             this.getDataList();
 
-
-
             if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
                 this.isPhone = true;
-                this.direction = "btt"; // 抽屉方向
                 // window.location.href = "mindex.html";
 
             } else {
                 this.isPhone = false;
-                this.direction = "rtl";
-                $(document).ready(function () {
-                    $(".el-card__body,.el-main").css("width", "95%");
-                });
+                // $(document).ready(function () {
+                //     $(".el-card__body,.el-main").css("width", "95%");
+                // });
             }
             // 监听页面滚动事件
             // window.addEventListener("scroll", this.showSearch);
-
-
         }
     })
 </script>
 <style scoped>
+    @import url("//unpkg.com/element-ui@2.15.6/lib/theme-chalk/index.css");
+
     .el-card {
         border-radius: 40px;
     }
 
     .el-card__body,
     .el-main {
-        width: 89%;
+        width: 95%;
     }
 
     .box-card-windows {
@@ -365,6 +436,14 @@
         position: fixed;
         left: 60%;
         border: #fff;
+    }
+
+    .el-table .delay-row  {
+        background:  oldlace;
+    }
+
+    .el-table .warning-row {
+        background: #f0f9eb;
     }
 </style>
 
