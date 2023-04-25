@@ -20,7 +20,7 @@
             <input @keyup.esc="esc" v-model="search" @keyup.enter="enter" class="search" />
         </div>
         <el-card v-if="!isPhone" shadow="always" :class="{'box-card-windows':!isPhone,'box-card-phone':isPhone}">
-            <el-table :show-header="false" :row-class-name="tableRowClassName" @select="selectChange"
+            <el-table  :show-header="false" :row-class-name="tableRowClassName" @select="selectChange"
                 @row-dblclick="rowClick" :data="tableData" style="width: 100%">
                 <el-table-column :show-overflow-tooltip="true" type="selection" width="30">
                 </el-table-column>
@@ -142,9 +142,48 @@
             enter() {
                 if (this.search === "del") {
                     this.deleteBatch();
+                }else if(this.search ==="chl"){
+                    this.cancelHighLight();
                 } else { // 如果是数字，包括小数点
                     this.searchQ();
                 }
+            },
+            cancelHighLight(){
+                if (this.selectIds.length === 0) {
+                    this.$message({
+                        message: '请选择数据',
+                        type: 'error'
+                    });
+                    return;
+                }
+                axios.post("http://localhost:8080/qa/ques/cancelHL",
+                        JSON.stringify(this.selectIds), {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                    .then(res => {
+                        if (res && res.data.code === 0) {
+                            this.$message({
+                                showClose: true,
+                                message: '已取消高亮显示',
+                                type: 'success'
+                            });
+                            this.search = "";
+                            this.getDataList();
+                        } else {
+                            this.$message({
+                                showClose: true,
+                                message: res.data.data,
+                                type: 'error'
+                            })
+                        };
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
+
+                
+
             },
             searchQ() {
                 axios.get('http://yanferr.com:8080/qa/ques/search', {
@@ -241,10 +280,12 @@
                 }).then(res => { // 必须要用箭头函数
                     if (res && res.data.code === 0) {
                         this.$message({
-                            message: '添加成功',
+                            showClose: true,
+                            message: '操作成功',
                             type: 'success'
                         });
-                        location.reload();
+                        this.searchQ();
+                        this.drawer = false;
                     } else {
                         alert("添加失败")
                     }
@@ -272,7 +313,7 @@
                 this.submit();
             },
             getDataList() {
-                axios.get('http://localhost:8080/qa/ques/list')
+                axios.get('http://yanferr.com:8080/qa/ques/list')
                     .then(response => {
                         this.tableData = response.data.page.list;
                         console.log(this.tableData)
@@ -325,7 +366,7 @@
                 this.updateHighLight(this.quesId);
             },
             updateHighLight(quesId) {
-                axios.get(`http://localhost:8080/qa/ques/updateHighLight/${quesId}`)
+                axios.get(`http://yanferr.com:8080/qa/ques/updateHighLight/${quesId}`)
                     .then(response => {
 
                     })
