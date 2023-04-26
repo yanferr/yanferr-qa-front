@@ -19,12 +19,19 @@
         <div class="search" @dblclick="dblclick" style="z-index:999;margin:0px auto;">
             <input @keyup.esc="esc" v-model="search" @keyup.enter="enter" class="search" />
         </div>
-        <el-card v-if="!isPhone" shadow="always" :class="{'box-card-windows':!isPhone,'box-card-phone':isPhone}">
-            <el-table  :show-header="false" :row-class-name="tableRowClassName" @select="selectChange"
+        <el-card v-if="!isPhone" shadow="always" class="box-card-windows">
+            <el-table :show-header="false" :row-class-name="tableRowClassName" @select="selectChange"
                 @row-dblclick="rowClick" :data="tableData" style="width: 100%">
                 <el-table-column :show-overflow-tooltip="true" type="selection" width="30">
                 </el-table-column>
                 <el-table-column :show-overflow-tooltip="true" prop="ques">
+                </el-table-column>
+                <el-table-column width="45">
+                    <template slot-scope="scope">
+                        
+                        <img v-if="scope.row.highLight!=-1" :src="scope.row.imgPath" alt="" style="width: 25px;height: 23px;">
+                        </el-button>
+                    </template>
                 </el-table-column>
                 <!-- <el-table-column v-show="false" prop="createTime" width="98px">
                 </el-table-column> -->
@@ -36,34 +43,35 @@
             </el-table-column>
             <el-table-column :show-overflow-tooltip="true" prop="ques">
             </el-table-column>
+            <el-table-column width="45">
+                <template slot-scope="scope">
+                    <img :src="scope.row.imgPath" alt="" style="width: 25px;height: 23px">
+                    </el-button>
+                </template>
+            </el-table-column>
             <!-- <el-table-column v-show="false" prop="createTime" width="98px">
                 </el-table-column> -->
         </el-table>
 
-        <el-dialog :close-on-click-modal="false" :visible.sync="drawer" :fullscreen="isPhone" width="30%" center>
-            <el-input class="inputQues" placeholder="输入问题" v-model="ques">
-            </el-input>
+        <el-dialog :close-on-click-modal="false" :visible.sync="drawer" :fullscreen="isPhone" width="40%" center>
+
+            <el-row>
+                <el-col :span="24">
+                    <el-input class="inputQues" placeholder="输入问题" v-model="ques">
+                    </el-input>
+                </el-col>
+
+            </el-row>
+
             <br><br>
             <br>
+            <el-input placeholder="溯源信息" v-model="source" clearable>
             </el-input>
-            <!-- <el-radio-group v-if="isPhone" v-model="scene" size="small">
-                <el-radio-button label="interv"></el-radio-button>
-                <el-radio-button label="daily"></el-radio-button>
-                <el-radio-button label="debug"></el-radio-button>
-                <el-radio-button label="book"></el-radio-button>
-                <el-radio-button label="other"></el-radio-button>
-            </el-radio-group>
-            <el-radio-group v-if="!isPhone" v-model="scene" size="medium">
-                <el-radio-button label="interv"></el-radio-button>
-                <el-radio-button label="daily"></el-radio-button>
-                <el-radio-button label="debug"></el-radio-button>
-                <el-radio-button label="book"></el-radio-button>
-                <el-radio-button label="other"></el-radio-button>
-            </el-radio-group> -->
-
+            <br><br><br>
             <el-select :default-first-option="true" v-model="optionsValue" multiple filterable allow-create
-                default-first-option placeholder="选择标签" autocomplete style="width:400px">
-                <el-option v-for="item in labels" :key="item.labelId" :label="item.labelName" :value="item.labelName">
+                default-first-option placeholder="选择标签" autocomplete>
+                <el-option style="width:100%" v-for="item in labels" :key="item.labelId" :label="item.labelName"
+                    :value="item.labelName">
                 </el-option>
             </el-select>
             <br><br>
@@ -77,7 +85,7 @@
                 <br>
                 最后一次修改：{{this.updateTime}}
                 <br>
-                当前记忆等级：Lv.{{this.memoryLevel}}
+                当前记忆等级：<img src="./pic/lv3.png" style="width: 10%;">
             </div>
         </el-dialog>
     </div>
@@ -93,7 +101,7 @@
             //这里存放数据
             return {
                 labels: [],
-                memoryLevel:"",
+                memoryLevel: "",
                 optionsValue: [],
                 search: "",
                 drawer: false,
@@ -105,6 +113,7 @@
                 updateTime: "",
                 ques: "",
                 answer: "",
+                source: "",
                 scene: "interv",
                 isPhone: false,
                 pageIndex: -1, // 当前页为新增页
@@ -116,7 +125,7 @@
         methods: {
 
             tableRowClassName({
-                row,    
+                row,
                 rowIndex
             }) {
                 if (row.highLight === 1) {
@@ -142,13 +151,13 @@
             enter() {
                 if (this.search === "del") {
                     this.deleteBatch();
-                }else if(this.search ==="chl"){
+                } else if (this.search === "chl") {
                     this.cancelHighLight();
                 } else { // 如果是数字，包括小数点
                     this.searchQ();
                 }
             },
-            cancelHighLight(){
+            cancelHighLight() {
                 if (this.selectIds.length === 0) {
                     this.$message({
                         message: '请选择数据',
@@ -182,7 +191,7 @@
                         console.log(error);
                     });
 
-                
+
 
             },
             searchQ() {
@@ -193,6 +202,8 @@
                     })
                     .then(response => {
                         this.tableData = response.data.data;
+                        // 处理
+                        this.getImgPath();
                     })
                     .catch(function (error) { // 请求失败处理
                     });
@@ -282,12 +293,13 @@
                         this.$message({
                             showClose: true,
                             message: '操作成功',
+                            duration: 500,
                             type: 'success'
                         });
-                        if(this.search===""){
+                        if (this.search === "") {
                             this.getDataList();
-                        }else{
-                            this.searchQ();    
+                        } else {
+                            this.searchQ();
                         }
                         this.drawer = false;
                     } else {
@@ -296,6 +308,11 @@
                 }).catch(function (error) {
                     alert("添加失败")
                 });
+            },
+            getImgPath() {
+                for (var i = 0; i < this.tableData.length; i++) {
+                    this.tableData[i].imgPath = "./pic/lv" + this.tableData[i].memoryLevel + ".png";
+                }
             },
             clickToSubmit() {
                 if (this.ques.trim().length === 0) {
@@ -320,6 +337,7 @@
                 axios.get('http://yanferr.com:8080/qa/ques/list')
                     .then(response => {
                         this.tableData = response.data.page.list;
+                        this.getImgPath();
                         console.log(this.tableData)
                     })
                     .catch(function (error) { // 请求失败处理
@@ -408,7 +426,7 @@
             } else {
                 this.isPhone = false;
                 // $(document).ready(function () {
-                //     $(".el-card__body,.el-main").css("width", "95%");
+                //     $(".el-card__body,.el-main").css("width", "96%");
                 // });
             }
             // 监听页面滚动事件
@@ -423,9 +441,12 @@
         border-radius: 40px;
     }
 
+    
+
+    /* 调整表格大小 */
     .el-card__body,
     .el-main {
-        width: 95%;
+        width: 96%;
     }
 
     .box-card-windows {
@@ -438,10 +459,7 @@
         display: table;
     }
 
-    .el-drawer__body {
-        padding: 15px;
-        width: 93%;
-    }
+
 
     .submitdiv {
         height: 45px;
@@ -483,12 +501,19 @@
         border: #fff;
     }
 
-    .el-table .delay-row  {
-        background:  oldlace;
+    .el-table .delay-row {
+        background: oldlace;
     }
 
     .el-table .warning-row {
         background: #f0f9eb;
+    }
+    .el-table__row>td {
+        border: none;
+    }
+
+    .el-table::before {
+        height: 0px;
     }
 </style>
 

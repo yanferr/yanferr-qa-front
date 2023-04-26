@@ -35,15 +35,15 @@
                 <el-radio-button label="other"></el-radio-button>
             </el-radio-group> -->
             <br><br><br>
-            <el-select :default-first-option="true" v-model="optionsValue" multiple filterable allow-create
+            <el-select :popper-append-to-body="false" :default-first-option="true" v-model="optionsValue" multiple filterable allow-create
                 default-first-option placeholder="选择标签" autocomplete>
                 <el-option v-for="item in labels" :key="item.labelId" :label="item.labelName" :value="item.labelName">
                 </el-option>
             </el-select>
             <br><br>
-            <el-slider v-model="planDay"></el-slider>
             <br>
-            <el-input :rows="10" type="textarea" placeholder="输入答案" v-model="answer">
+            <el-input @paste.native.capture.prevent="pasting" :rows="10" type="textarea" placeholder="输入答案"
+                v-model="answer">
             </el-input>
             <div @dblclick="toList" id="divbuttonleft" class="submitdiv"></div>
             <div @click="clickToSubmit" id="divbuttonright" class="submitdiv"></div>
@@ -60,7 +60,7 @@
         data() {
             //这里存放数据
             return {
-                planDay:0,
+                planDay: 0,
                 labels: [],
                 optionsValue: [],
                 quesId: null,
@@ -73,6 +73,53 @@
             };
         },
         methods: {
+            pasting(event) {
+                let txt = event.clipboardData.getData('Text')
+                console.log(event.clipboardData.getData('Text'))
+                if (typeof (txt) == 'string') {
+                    this.textMsg += txt
+                }
+                let file = null
+                const items = (event.clipboardData || window.clipboardData).items
+                console.log(items)
+                if (items.length) {
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                            file = items[i].getAsFile()
+                            console.log(file)
+                            this.handleChange(file)
+                            if (!this.canUpload) {
+                                this.canUpload = !this.canUpload;
+                            }
+                            break
+                        }
+                    }
+                }
+            },
+            // 上传
+            handleChange(file, filelist) {
+                console.log(file, filelist)
+                let formData = new FormData()
+                formData.append('file', file.raw || file)
+                axios.post(
+                        url, formData, {
+                            headers: {
+                                'Content-type': 'multipart/form-data',
+                                bwToken: token
+                            }
+                        }
+                    ).then(res => {
+                        console.log(res.data, '1321312321')
+                        let obj = new Object();
+                        obj.url = res.data.data
+                        obj.name = res.data.data.split('/').slice(-1).join();
+                        this.fileList.push(obj)
+                        console.log(this.fileList)
+                    })
+                    .catch(err => {
+                        console.log(err)
+                    })
+            },
 
             toList() {
                 // location.href="list.html"
