@@ -28,8 +28,8 @@
                 </el-table-column>
                 <el-table-column width="45">
                     <template slot-scope="scope">
-                        
-                        <img v-if="scope.row.highLight!=-1" :src="scope.row.imgPath" alt="" style="width: 25px;height: 23px;">
+                        <img v-if="scope.row.highLight!=-1" :src="scope.row.imgPath" alt=""
+                            style="width: 25px;height: 23px;">
                         </el-button>
                     </template>
                 </el-table-column>
@@ -68,12 +68,24 @@
             <el-input placeholder="溯源信息" v-model="source" clearable>
             </el-input>
             <br><br><br>
-            <el-select :default-first-option="true" v-model="optionsValue" multiple filterable allow-create
-                default-first-option placeholder="选择标签" autocomplete>
-                <el-option style="width:100%" v-for="item in labels" :key="item.labelId" :label="item.labelName"
-                    :value="item.labelName">
-                </el-option>
-            </el-select>
+            <el-row>
+                <el-col :span="12">
+                    <el-select :default-first-option="true" v-model="optionsValue" multiple filterable allow-create
+                        default-first-option placeholder="选择标签" autocomplete>
+                        <el-option style="width:100%" v-for="item in labels" :key="item.labelId" :label="item.labelName"
+                            :value="item.labelName">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :span="12">
+                    <!-- 实现逻辑：打开只需更新lastView和设置highLight=0,关闭只需设置highLight=-1 -->
+                    <el-switch v-model="active" @change="memory" :disabled="disableswitch" active-value="true"
+                        inactive-value="false" active-text="记忆">
+                    </el-switch>
+                </el-col>
+            </el-row>
+
+
             <br><br>
             <br>
             <el-input :rows="10" type="textarea" placeholder="输入答案" v-model="answer">
@@ -85,7 +97,7 @@
                 <br>
                 最后一次修改：{{this.updateTime}}
                 <br>
-                当前记忆等级：<img src="./pic/lv3.png" style="width: 10%;">
+                当前记忆等级：<img :src=levelImg style="width: 10%;">
             </div>
         </el-dialog>
     </div>
@@ -100,21 +112,24 @@
         data() {
             //这里存放数据
             return {
+                active: "", // 激活记忆，true&false
                 labels: [],
                 memoryLevel: "",
+                highLight: null,
+                levelImg: "",
                 optionsValue: [],
                 search: "",
                 drawer: false,
-                search: '',
                 tableData: [],
                 quesId: null,
                 answerId: null,
                 createTime: "",
                 updateTime: "",
                 ques: "",
+                disableswitch: false,
                 answer: "",
-                source: "",
-                scene: "interv",
+                source: null,
+                scene: "",
                 isPhone: false,
                 pageIndex: -1, // 当前页为新增页
                 showFixedSearch: false,
@@ -136,6 +151,24 @@
                     return '';
                 }
 
+            },
+            memory() {
+                axios.get('http://localhost:8080/qa/ques/joinMemory', {
+                        params: {
+                            active: this.active,
+                            quesId: this.quesId
+                        }
+                    })
+                    .then(res => {
+                        if (res && res.data.code === 0) {
+                            this.$message({
+                                message: '切换成功',
+                                type: 'success'
+                            });
+                        }
+                    })
+                    .catch(function (error) { // 请求失败处理
+                    });
             },
 
             clickclose() {
@@ -384,6 +417,11 @@
                 this.updateTime = row.updateTime;
                 this.getAnswerById(this.answerId);
                 this.memoryLevel = row.memoryLevel;
+                this.disableswitch = this.memoryLevel >= 9;
+                this.active = row.highLight >= 0 ? "true" : "false";
+                // this.highLight = row.highLight;
+                // this.levelImg = "./pic/lv" + memoryLevel + ".png",
+
                 // 更新lastView、重新计算highLight
                 this.updateHighLight(this.quesId);
             },
@@ -441,7 +479,7 @@
         border-radius: 40px;
     }
 
-    
+
 
     /* 调整表格大小 */
     .el-card__body,
@@ -459,7 +497,9 @@
         display: table;
     }
 
-
+    .el-switch {
+        margin-top: 10px;
+    }
 
     .submitdiv {
         height: 45px;
@@ -508,6 +548,7 @@
     .el-table .warning-row {
         background: #f0f9eb;
     }
+
     .el-table__row>td {
         border: none;
     }
