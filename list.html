@@ -29,7 +29,7 @@
                 <el-table-column width="45">
                     <template slot-scope="scope">
                         <img v-if="scope.row.highLight!=-1" :src="scope.row.imgPath" alt=""
-                            style="width: 25px;height: 23px;">
+                            style="width: 25px;height: 23px;transform:translate(20%,20%);">
                         </el-button>
                     </template>
                 </el-table-column>
@@ -37,15 +37,16 @@
                 </el-table-column> -->
             </el-table>
         </el-card>
-        <el-table v-if="isPhone" :row-class-name="tableRowClassName" :show-header="false" @select="selectChange"
-            @row-dblclick="rowClick" :data="tableData" style="width: 100%">
+        <el-table v-if="isPhone" size="medium" :row-class-name="tableRowClassName" :show-header="false"
+            @select="selectChange" @row-dblclick="rowClick" :data="tableData" style="width: 100%">
             <el-table-column :show-overflow-tooltip="true" type="selection" width="30px">
             </el-table-column>
             <el-table-column :show-overflow-tooltip="true" prop="ques">
             </el-table-column>
             <el-table-column width="45">
                 <template slot-scope="scope">
-                    <img :src="scope.row.imgPath" alt="" style="width: 25px;height: 23px">
+                    <img v-if="scope.row.highLight!=-1" :src="scope.row.imgPath" alt=""
+                        style="width: 23px;height: 21px;transform:translate(20%,20%);">
                     </el-button>
                 </template>
             </el-table-column>
@@ -97,7 +98,12 @@
                 <br>
                 最后一次修改：{{this.updateTime}}
                 <br>
-                当前记忆等级：<img :src=levelImg style="width: 10%;">
+                <span v-if="memoryLevel<13">
+                    下个记忆等级：<img :src=nextLevelImg style="width: 4%;">
+                </span>
+                <span v-if="memoryLevel>=13">
+                    满级达成！<img src="./pic/lv13.png" style="width: 4%;">
+                </span>
             </div>
         </el-dialog>
     </div>
@@ -116,7 +122,7 @@
                 labels: [],
                 memoryLevel: "",
                 highLight: null,
-                levelImg: "",
+                nextLevelImg: "",
                 optionsValue: [],
                 search: "",
                 drawer: false,
@@ -152,8 +158,9 @@
                 }
 
             },
+            // 是否加入记忆计划
             memory() {
-                axios.get('http://localhost:8080/qa/ques/joinMemory', {
+                axios.get('http://yanferr.com:8080/qa/ques/joinMemory', {
                         params: {
                             active: this.active,
                             quesId: this.quesId
@@ -165,7 +172,9 @@
                                 message: '切换成功',
                                 type: 'success'
                             });
+                            this.getDataList();
                         }
+                        
                     })
                     .catch(function (error) { // 请求失败处理
                     });
@@ -223,9 +232,6 @@
                     }).catch(function (error) {
                         console.log(error);
                     });
-
-
-
             },
             searchQ() {
                 axios.get('http://yanferr.com:8080/qa/ques/search', {
@@ -274,7 +280,6 @@
                     }).catch(function (error) {
                         console.log(error);
                     });
-
                 this.getDataList();
             },
             // input监听esc
@@ -318,7 +323,7 @@
                     quesId: this.quesId,
                     answerId: this.answerId,
                     ques: this.ques,
-                    scene: this.scene,
+                    source: this.source,
                     answer: this.answer,
                     labelNames: this.optionsValue
                 }).then(res => { // 必须要用箭头函数
@@ -335,6 +340,7 @@
                             this.searchQ();
                         }
                         this.drawer = false;
+                        // this.active = !this.active;
                     } else {
                         alert("添加失败")
                     }
@@ -403,7 +409,7 @@
                 console.log(this.optionsValue)
 
             },
-            //行单击事件
+            //行双击事件
             rowClick(row, column, event) {
                 this.optionsValue = [];
                 this.loadLabels();
@@ -419,6 +425,7 @@
                 this.memoryLevel = row.memoryLevel;
                 this.disableswitch = this.memoryLevel >= 9;
                 this.active = row.highLight >= 0 ? "true" : "false";
+                this.nextLevelImg = "./pic/lv" + (this.memoryLevel + 1) + ".png";
                 // this.highLight = row.highLight;
                 // this.levelImg = "./pic/lv" + memoryLevel + ".png",
 
