@@ -423,6 +423,7 @@
                 this.updateTime = row.updateTime;
                 this.getAnswerById(this.answerId);
                 this.memoryLevel = row.memoryLevel;
+                this.source = row.source;
                 this.disableswitch = this.memoryLevel >= 9;
                 this.active = row.highLight >= 0 ? "true" : "false";
                 this.nextLevelImg = "./pic/lv" + (this.memoryLevel + 1) + ".png";
