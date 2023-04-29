@@ -16,96 +16,145 @@
 
 <body>
     <div id="app">
-        <div class="search" @dblclick="dblclick" style="z-index:999;margin:0px auto;">
-            <input @keyup.esc="esc" v-model="search" @keyup.enter="enter" class="search" />
-        </div>
-        <el-card v-if="!isPhone" shadow="always" class="box-card-windows">
-            <el-table :show-header="false" :row-class-name="tableRowClassName" @select="selectChange"
-                @row-dblclick="rowClick" :data="tableData" style="width: 100%">
-                <el-table-column :show-overflow-tooltip="true" type="selection" width="30">
-                </el-table-column>
-                <el-table-column :show-overflow-tooltip="true" prop="ques">
-                </el-table-column>
-                <el-table-column width="45">
-                    <template slot-scope="scope">
-                        <img v-if="scope.row.highLight!=-1" :src="scope.row.imgPath" alt=""
-                            style="width: 25px;height: 23px;transform:translate(20%,20%);">
-                        </el-button>
-                    </template>
-                </el-table-column>
-                <!-- <el-table-column v-show="false" prop="createTime" width="98px">
-                </el-table-column> -->
-            </el-table>
-        </el-card>
-        <el-table v-if="isPhone" size="medium" :row-class-name="tableRowClassName" :show-header="false"
-            @select="selectChange" @row-dblclick="rowClick" :data="tableData" style="width: 100%">
-            <el-table-column :show-overflow-tooltip="true" type="selection" width="30px">
-            </el-table-column>
-            <el-table-column :show-overflow-tooltip="true" prop="ques">
-            </el-table-column>
-            <el-table-column width="45">
-                <template slot-scope="scope">
-                    <img v-if="scope.row.highLight!=-1" :src="scope.row.imgPath" alt=""
-                        style="width: 23px;height: 21px;transform:translate(20%,20%);">
-                    </el-button>
-                </template>
-            </el-table-column>
-            <!-- <el-table-column v-show="false" prop="createTime" width="98px">
-                </el-table-column> -->
-        </el-table>
 
-        <el-dialog :close-on-click-modal="false" :visible.sync="drawer" :fullscreen="isPhone" width="40%" center>
+        <el-container>
+            <el-header
+                style="text-align: right;margin-top:5px;position:fixed; width:100%;height:40px;z-index:999; top:0; font-size: 12px">
+                <el-row>
+                    <el-col :span="1">
+                        <!-- <i  class="el-icon-back"></i> -->
+                        <el-button style="margin-top:3px" @click="toindex" size="mini" type="" icon="el-icon-back"
+                            circle></el-button>
+                    </el-col>
+                    <el-col :span="22">
+                        <el-input @keyup.esc.native="esc" @keyup.enter.native="enter" size="small "
+                            placeholder="请输入搜索内容" v-model="search.content" class="input-with-select">
+                            <el-select filterable clearable v-model="search.labelName" slot="prepend" placeholder="标签">
+                                <el-option style="width:100%" v-for="item in labels" :key="item.labelId"
+                                    :label="item.labelName" :value="item.labelName">
+                                </el-option>
+                            </el-select>
+                            <i slot="prefix" class="el-input__icon el-icon-search"></i>
+                            <el-input-number controls-position="right" size="mini" slot="append"
+                                v-model="search.recentDay"  :min="1" :max="90" label="描述文字">
+                            </el-input-number>
+                        </el-input>
+                    </el-col>
+                    <el-col :span="1">
+                        <el-dropdown style="margin-top: 5px;">
+                            <i class="el-icon-setting" style="margin-right: 15px"></i>
+                            <el-dropdown-menu slot="dropdown">
+                                <el-dropdown-item>批量查看 <i class="el-icon-view" style="margin-right: 15px"></i>
+                                </el-dropdown-item>
+                                <el-dropdown-item @click.native="top">选择置顶 <i class="el-icon-s-opportunity"
+                                        style="margin-right: 15px"></i>
+                                </el-dropdown-item>
+                                <el-dropdown-item @click.native="topCancel">取消置顶 <i class="el-icon-upload2"
+                                        style="margin-right: 15px"></i>
+                                </el-dropdown-item>
+                                <el-dropdown-item>分享问题 <i class="el-icon-share" style="margin-right: 15px"></i>
+                                </el-dropdown-item>
+                                <el-popconfirm @confirm="cancelHighLight" title="所选内容将取消记忆计划？">
+                                    <el-dropdown-item slot="reference">
+                                        取消记忆 <i class="el-icon-magic-stick" style="margin-right: 15px"></i>
+                                    </el-dropdown-item>
+                                </el-popconfirm>
 
-            <el-row>
-                <el-col :span="24">
-                    <el-input class="inputQues" placeholder="输入问题" v-model="ques">
+                                <el-popconfirm @confirm="deleteBatch" title="确定删除所选内容？">
+                                    <el-dropdown-item slot="reference">
+                                        批量删除 <i class="el-icon-delete" style="margin-right: 15px"></i>
+                                    </el-dropdown-item>
+                                </el-popconfirm>
+                            </el-dropdown-menu>
+                        </el-dropdown>
+                    </el-col>
+                </el-row>
+            </el-header>
+            <el-main style="width:100%">
+                <el-card v-if="!isPhone" shadow="always" class="box-card-windows">
+                    <el-table  :v-loading="true" :show-header="false" :row-class-name="tableRowClassName" @select="selectChange"
+                        @row-dblclick="rowClick" :data="tableData" style="width: 100%">
+                        <el-table-column :show-overflow-tooltip="true" type="selection" width="30">
+                        </el-table-column>
+                        <el-table-column :show-overflow-tooltip="true" prop="ques">
+                        </el-table-column>
+                        <el-table-column width="45">
+                            <template slot-scope="scope">
+                                <img v-if="scope.row.highLight!=-1" :src="scope.row.imgPath" alt=""
+                                    style="width: 25px;height: 23px;transform:translate(20%,20%);">
+                                </el-button>
+                            </template>
+                        </el-table-column>
+
+                    </el-table>
+                </el-card>
+                <el-table v-if="isPhone" size="medium" :row-class-name="tableRowClassName" :show-header="false"
+                    @select="selectChange" @row-dblclick="rowClick" :data="tableData" style="width: 100%">
+                    <el-table-column :show-overflow-tooltip="true" type="selection" width="30px">
+                    </el-table-column>
+                    <el-table-column :show-overflow-tooltip="true" prop="ques">
+                    </el-table-column>
+                    <el-table-column width="45">
+                        <template slot-scope="scope">
+                            <img v-if="scope.row.highLight!=-1" :src="scope.row.imgPath" alt=""
+                                style="width: 23px;height: 21px;transform:translate(20%,20%);">
+                            </el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+
+                <el-dialog :close-on-click-modal="false" :visible.sync="drawer" :fullscreen="isPhone" width="40%"
+                    center>
+                    <el-row>
+                        <el-col :span="24">
+                            <el-input class="inputQues" placeholder="输入问题" v-model="ques">
+                            </el-input>
+                        </el-col>
+                    </el-row>
+                    <br><br>
+                    <br>
+                    <el-input placeholder="溯源信息" v-model="source" clearable>
                     </el-input>
-                </el-col>
-
-            </el-row>
-
-            <br><br>
-            <br>
-            <el-input placeholder="溯源信息" v-model="source" clearable>
-            </el-input>
-            <br><br><br>
-            <el-row>
-                <el-col :span="12">
-                    <el-select :default-first-option="true" v-model="optionsValue" multiple filterable allow-create
-                        default-first-option placeholder="选择标签" autocomplete>
-                        <el-option style="width:100%" v-for="item in labels" :key="item.labelId" :label="item.labelName"
-                            :value="item.labelName">
-                        </el-option>
-                    </el-select>
-                </el-col>
-                <el-col :span="12">
-                    <!-- 实现逻辑：打开只需更新lastView和设置highLight=0,关闭只需设置highLight=-1 -->
-                    <el-switch v-model="active" @change="memory" :disabled="disableswitch" active-value="true"
-                        inactive-value="false" active-text="记忆">
-                    </el-switch>
-                </el-col>
-            </el-row>
+                    <br><br><br>
+                    <el-row>
+                        <el-col :span="12">
+                            <el-select :default-first-option="true" v-model="optionsValue" multiple filterable
+                                allow-create default-first-option placeholder="选择标签" autocomplete>
+                                <el-option style="width:100%" v-for="item in labels" :key="item.labelId"
+                                    :label="item.labelName" :value="item.labelName">
+                                </el-option>
+                            </el-select>
+                        </el-col>
+                        <el-col :span="12">
+                            <!-- 实现逻辑：打开只需更新lastView和设置highLight=0,关闭只需设置highLight=-1 -->
+                            <el-switch v-model="active" @change="memory" :disabled="disableswitch" active-value="true"
+                                inactive-value="false" active-text="记忆">
+                            </el-switch>
+                        </el-col>
+                    </el-row>
 
 
-            <br><br>
-            <br>
-            <el-input :rows="10" type="textarea" placeholder="输入答案" v-model="answer">
-            </el-input>
-            <div @dblclick="clickToSubmit" class="submitdiv"></div>
+                    <br><br>
+                    <br>
+                    <el-input :rows="10" type="textarea" placeholder="输入答案" v-model="answer">
+                    </el-input>
+                    <div @dblclick="clickToSubmit" class="submitdiv"></div>
 
-            <div @click="clickclose">
-                创建问题时间：{{this.createTime}}
-                <br>
-                最后一次修改：{{this.updateTime}}
-                <br>
-                <span v-if="memoryLevel<13">
-                    下个记忆等级：<img :src=nextLevelImg style="width: 4%;">
-                </span>
-                <span v-if="memoryLevel>=13">
-                    满级达成！<img src="./pic/lv13.png" style="width: 4%;">
-                </span>
-            </div>
-        </el-dialog>
+                    <div @click="clickclose">
+                        创建问题时间：{{this.createTime}}
+                        <br>
+                        最后一次修改：{{this.updateTime}}
+                        <br>
+                        <span v-if="memoryLevel<13">
+                            下个记忆等级：<img :src=nextLevelImg style="width: 4%;">
+                        </span>
+                        <span v-if="memoryLevel>=13">
+                            满级达成！<img src="./pic/lv13.png" style="width: 4%;">
+                        </span>
+                    </div>
+                </el-dialog>
+            </el-main>
+        </el-container>
     </div>
 </body>
 <script src="./js/axios.min.js"></script>
@@ -118,13 +167,14 @@
         data() {
             //这里存放数据
             return {
+
                 active: "", // 激活记忆，true&false
                 labels: [],
                 memoryLevel: "",
                 highLight: null,
                 nextLevelImg: "",
                 optionsValue: [],
-                search: "",
+                search: {},
                 drawer: false,
                 tableData: [],
                 quesId: null,
@@ -138,13 +188,11 @@
                 scene: "",
                 isPhone: false,
                 pageIndex: -1, // 当前页为新增页
-                showFixedSearch: false,
                 selectIds: [], // 选中的row
             };
         },
 
         methods: {
-
             tableRowClassName({
                 row,
                 rowIndex
@@ -153,6 +201,8 @@
                     return 'warning-row'
                 } else if (row.highLight === 2) {
                     return 'delay-row'
+                } else if (row.highLight === 4) {
+                    return 'top-row'
                 } else {
                     return '';
                 }
@@ -174,7 +224,7 @@
                             });
                             this.getDataList();
                         }
-                        
+
                     })
                     .catch(function (error) { // 请求失败处理
                     });
@@ -191,13 +241,58 @@
             },
             // input监听enter
             enter() {
-                if (this.search === "del") {
-                    this.deleteBatch();
-                } else if (this.search === "chl") {
-                    this.cancelHighLight();
-                } else { // 如果是数字，包括小数点
-                    this.searchQ();
-                }
+                // if (this.search === "del") {
+                //     this.deleteBatch();
+                // } else if (this.search === "chl") {
+                //     this.cancelHighLight();
+                // } else if (this.search.startsWith(":")) {
+                //     this.searchLabel();
+                // } else { // 如果是数字，包括小数点
+                //     this.searchQ();
+                // }
+                this.searchQ();
+            },
+            top() { //置顶
+                axios.post("http://localhost:8080/qa/ques/top",
+                        JSON.stringify(this.selectIds), {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                    .then(res => {
+                        if (res && res.data.code === 0) {
+                            this.getDataList();
+                        } else {
+                            this.$message({
+                                showClose: true,
+                                message: res.data.data,
+                                type: 'error'
+                            })
+                        };
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
+            },
+            topCancel() { //置顶
+                axios.post("http://localhost:8080/qa/ques/topCancel",
+                        JSON.stringify(this.selectIds), {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                    .then(res => {
+                        if (res && res.data.code === 0) {
+                            this.getDataList();
+                        } else {
+                            this.$message({
+                                showClose: true,
+                                message: res.data.data,
+                                type: 'error'
+                            })
+                        };
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
             },
             cancelHighLight() {
                 if (this.selectIds.length === 0) {
@@ -220,7 +315,7 @@
                                 message: '已取消高亮显示',
                                 type: 'success'
                             });
-                            this.search = "";
+                            this.search = {};
                             this.getDataList();
                         } else {
                             this.$message({
@@ -234,18 +329,17 @@
                     });
             },
             searchQ() {
-                axios.get('http://yanferr.com:8080/qa/ques/search', {
-                        params: {
-                            search: this.search,
-                        }
-                    })
-                    .then(response => {
-                        this.tableData = response.data.data;
-                        // 处理
-                        this.getImgPath();
-                    })
-                    .catch(function (error) { // 请求失败处理
-                    });
+                axios.post('http://localhost:8080/qa/ques/search', {
+                    recentDay: this.search.recentDay,
+                    content: this.search.content,
+                    labelName: this.search.labelName
+                }).then(res => {
+                    this.tableData = res.data.data;
+                    // 处理
+                    this.getImgPath();
+                }).catch(function (error) {
+                    console.log(error);
+                });
             },
             deleteBatch() {
                 if (this.selectIds.length === 0) {
@@ -255,6 +349,7 @@
                     });
                     return;
                 }
+
                 axios.post("http://yanferr.com:8080/qa/ques/delete",
                         JSON.stringify(this.selectIds), {
                             headers: {
@@ -284,7 +379,7 @@
             },
             // input监听esc
             esc() {
-                this.search = "";
+                this.search.content = "";
             },
             // 修改答案
             updateAnswer() {
@@ -313,7 +408,7 @@
             rightClick() {
                 alert("dsf")
             },
-            dblclick() {
+            toindex() {
                 document.location.href = '/index.html';
             },
             submit() {
@@ -373,7 +468,7 @@
                 this.submit();
             },
             getDataList() {
-                axios.get('http://yanferr.com:8080/qa/ques/list')
+                axios.get('http://localhost:8080/qa/ques/list')
                     .then(response => {
                         this.tableData = response.data.page.list;
                         this.getImgPath();
@@ -412,7 +507,6 @@
             //行双击事件
             rowClick(row, column, event) {
                 this.optionsValue = [];
-                this.loadLabels();
                 this.lablesWithQuesId(row.quesId);
                 this.quesId = row.quesId;
                 this.drawer = true;
@@ -451,20 +545,10 @@
                         console.log(error);
                     });
             },
-            showSearch() {
-                // 获取当前滚动条向下滚动的距离
-                let scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-                // 当页面滚动到高度300px处时，显示搜索框
-                if (scrollTop > 50) {
-                    this.showFixedSearch = true;
-                } else {
-                    this.showFixedSearch = false;
-                }
-            },
         },
         mounted() {
             this.getDataList();
-
+            this.loadLabels();
             if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
                 this.isPhone = true;
                 // window.location.href = "mindex.html";
@@ -485,6 +569,11 @@
 
     .el-card {
         border-radius: 40px;
+    }
+
+    .top {
+        height: 100px;
+        width: 100%;
     }
 
 
@@ -542,19 +631,16 @@
         font-size: 5px;
     }
 
-
-    .search {
-        position: fixed;
-        left: 60%;
-        border: #fff;
-    }
-
     .el-table .delay-row {
         background: oldlace;
     }
 
     .el-table .warning-row {
         background: #f0f9eb;
+    }
+
+    .el-table .top-row {
+        background: #f6b078;
     }
 
     .el-table__row>td {
