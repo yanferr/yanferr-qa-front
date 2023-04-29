@@ -36,7 +36,7 @@
                             </el-select>
                             <i slot="prefix" class="el-input__icon el-icon-search"></i>
                             <el-input-number controls-position="right" size="mini" slot="append"
-                                v-model="search.recentDay"  :min="1" :max="90" label="描述文字">
+                                v-model="search.recentDay" :min="1" :max="90" label="描述文字">
                             </el-input-number>
                         </el-input>
                     </el-col>
@@ -44,7 +44,7 @@
                         <el-dropdown style="margin-top: 5px;">
                             <i class="el-icon-setting" style="margin-right: 15px"></i>
                             <el-dropdown-menu slot="dropdown">
-                                <el-dropdown-item>批量查看 <i class="el-icon-view" style="margin-right: 15px"></i>
+                                <el-dropdown-item @click.native="updateHighLightBatch">批量查看 <i class="el-icon-view" style="margin-right: 15px"></i>
                                 </el-dropdown-item>
                                 <el-dropdown-item @click.native="top">选择置顶 <i class="el-icon-s-opportunity"
                                         style="margin-right: 15px"></i>
@@ -72,8 +72,8 @@
             </el-header>
             <el-main style="width:100%">
                 <el-card v-if="!isPhone" shadow="always" class="box-card-windows">
-                    <el-table  :v-loading="true" :show-header="false" :row-class-name="tableRowClassName" @select="selectChange"
-                        @row-dblclick="rowClick" :data="tableData" style="width: 100%">
+                    <el-table :v-loading="true" :show-header="false" :row-class-name="tableRowClassName"
+                        @select="selectChange" @row-dblclick="rowClick" :data="tableData" style="width: 100%">
                         <el-table-column :show-overflow-tooltip="true" type="selection" width="30">
                         </el-table-column>
                         <el-table-column :show-overflow-tooltip="true" prop="ques">
@@ -89,7 +89,8 @@
                     </el-table>
                 </el-card>
                 <el-table v-if="isPhone" size="medium" :row-class-name="tableRowClassName" :show-header="false"
-                    @select="selectChange" @row-dblclick="rowClick" :data="tableData" style="width: 100%">
+                    @select="selectChange" @row-dblclick="rowClick" :data="tableData"
+                    style="width: 100%; margin-top: 25px;">
                     <el-table-column :show-overflow-tooltip="true" type="selection" width="30px">
                     </el-table-column>
                     <el-table-column :show-overflow-tooltip="true" prop="ques">
@@ -253,7 +254,7 @@
                 this.searchQ();
             },
             top() { //置顶
-                axios.post("http://localhost:8080/qa/ques/top",
+                axios.post("http://yanferr.com:8080/qa/ques/top",
                         JSON.stringify(this.selectIds), {
                             headers: {
                                 'Content-Type': 'application/json'
@@ -274,7 +275,7 @@
                     });
             },
             topCancel() { //置顶
-                axios.post("http://localhost:8080/qa/ques/topCancel",
+                axios.post("http://yanferr.com:8080/qa/ques/topCancel",
                         JSON.stringify(this.selectIds), {
                             headers: {
                                 'Content-Type': 'application/json'
@@ -329,7 +330,7 @@
                     });
             },
             searchQ() {
-                axios.post('http://localhost:8080/qa/ques/search', {
+                axios.post('http://yanferr.com:8080/qa/ques/search', {
                     recentDay: this.search.recentDay,
                     content: this.search.content,
                     labelName: this.search.labelName
@@ -468,7 +469,7 @@
                 this.submit();
             },
             getDataList() {
-                axios.get('http://localhost:8080/qa/ques/list')
+                axios.get('http://yanferr.com:8080/qa/ques/list')
                     .then(response => {
                         this.tableData = response.data.page.list;
                         this.getImgPath();
@@ -536,32 +537,46 @@
                         alert("lastView更新失败")
                     });
             },
-            getAnswerById(answerId) {
-                axios.get(`http://yanferr.com:8080/qa/answer/info/${answerId}`)
-                    .then(response => {
-                        this.answer = response.data.answer.answer;
+            updateHighLightBatch() {
+                axios.post(`http://yanferr.com:8080/qa/ques/updateHighLightBatch`,
+                    JSON.stringify(this.selectIds), {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
                     })
-                    .catch(function (error) { // 请求失败处理
-                        console.log(error);
-                    });
-            },
+            .then(response => {
+                this.getDataList();
+            })
+            .catch(function (error) { // 请求失败处理
+                alert("lastView更新失败")
+            });
         },
-        mounted() {
-            this.getDataList();
-            this.loadLabels();
-            if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
-                this.isPhone = true;
-                // window.location.href = "mindex.html";
+        getAnswerById(answerId) {
+            axios.get(`http://yanferr.com:8080/qa/answer/info/${answerId}`)
+                .then(response => {
+                    this.answer = response.data.answer.answer;
+                })
+                .catch(function (error) { // 请求失败处理
+                    console.log(error);
+                });
+        },
+    },
+    mounted() {
+        this.getDataList();
+        this.loadLabels();
+        if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
+            this.isPhone = true;
+            // window.location.href = "mindex.html";
 
-            } else {
-                this.isPhone = false;
-                // $(document).ready(function () {
-                //     $(".el-card__body,.el-main").css("width", "96%");
-                // });
-            }
-            // 监听页面滚动事件
-            // window.addEventListener("scroll", this.showSearch);
+        } else {
+            this.isPhone = false;
+            // $(document).ready(function () {
+            //     $(".el-card__body,.el-main").css("width", "96%");
+            // });
         }
+        // 监听页面滚动事件
+        // window.addEventListener("scroll", this.showSearch);
+    }
     })
 </script>
 <style scoped>
@@ -576,6 +591,9 @@
         width: 100%;
     }
 
+    body {
+        margin: 0px;
+    }
 
 
     /* 调整表格大小 */
@@ -649,6 +667,11 @@
 
     .el-table::before {
         height: 0px;
+    }
+
+    .el-main,
+    .el-header {
+        padding: 0px;
     }
 </style>
 
