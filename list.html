@@ -44,7 +44,8 @@
                         <el-dropdown style="margin-top: 5px;">
                             <i class="el-icon-setting" style="margin-right: 15px"></i>
                             <el-dropdown-menu slot="dropdown">
-                                <el-dropdown-item @click.native="updateHighLightBatch">批量查看 <i class="el-icon-view" style="margin-right: 15px"></i>
+                                <el-dropdown-item @click.native="updateHighLightBatch">批量查看 <i class="el-icon-view"
+                                        style="margin-right: 15px"></i>
                                 </el-dropdown-item>
                                 <el-dropdown-item @click.native="top">选择置顶 <i class="el-icon-s-opportunity"
                                         style="margin-right: 15px"></i>
@@ -104,8 +105,8 @@
                     </el-table-column>
                 </el-table>
 
-                <el-dialog :close-on-click-modal="false" :visible.sync="drawer" :fullscreen="isPhone" width="40%"
-                    center>
+                <el-dialog @close="handleClose" :close-on-click-modal="false" :visible.sync="drawer"
+                    :fullscreen="isPhone" width="40%" center>
                     <el-row>
                         <el-col :span="24">
                             <el-input class="inputQues" placeholder="输入问题" v-model="ques">
@@ -126,12 +127,17 @@
                                 </el-option>
                             </el-select>
                         </el-col>
-                        <el-col :span="12">
+                        <el-col :span="6">
                             <!-- 实现逻辑：打开只需更新lastView和设置highLight=0,关闭只需设置highLight=-1 -->
                             <el-switch v-model="active" @change="memory" :disabled="disableswitch" active-value="true"
                                 inactive-value="false" active-text="记忆">
                             </el-switch>
                         </el-col>
+                        <el-col :span="6" style="margin-top:10px" v-if="highLight===1 || highLight===2">
+                            <el-link type="danger" :underline="false" :disabled="memoryStatus.disabled" @click="forgot">
+                                {{memoryStatus.msg}}</el-link>
+                        </el-col>
+
                     </el-row>
 
 
@@ -146,8 +152,11 @@
                         <br>
                         最后一次修改：{{this.updateTime}}
                         <br>
-                        <span v-if="memoryLevel<13">
-                            下个记忆等级：<img :src=nextLevelImg style="width: 4%;">
+                        <span v-if="memoryLevel<13 && highLight==1">
+                            成功晋级！当前记忆等级：<img :src=nextLevelImg style="width: 4%;">
+                        </span>
+                        <span v-if="memoryLevel<13 && highLight==2">
+                            晋级失败！记忆等级下降至：<img :src=nextLevelImg style="width: 4%;">
                         </span>
                         <span v-if="memoryLevel>=13">
                             满级达成！<img src="./pic/lv13.png" style="width: 4%;">
@@ -168,7 +177,11 @@
         data() {
             //这里存放数据
             return {
-
+                memoryStatus: { // 记录是不是忘了
+                    msg: "",
+                    disabled: false,
+                    master: null
+                },
                 active: "", // 激活记忆，true&false
                 labels: [],
                 memoryLevel: "",
@@ -194,6 +207,28 @@
         },
 
         methods: {
+            handleClose() { // dialog关闭时的回调---更新levelRecord
+                if (this.highLight === 1 || this.highLight === 2) {
+                    if (this.memoryStatus.disabled) { // 说明点击了“忘了”
+                        this.memoryStatus.master = "x";
+                    } else {
+                        this.memoryStatus.master= "v";
+                    }
+                    axios.get(`http://localhost:8080/qa/levelRecord/sou/${this.quesId}`, {
+                        params: {
+                            "master": this.memoryStatus.master
+                        }
+                    }).then(res => {}).catch(e => {
+                        alert("记录时间过程出错了")
+                    })
+                }
+                this.getDataList();
+            },
+            forgot() { // 记录该问题被标记为遗忘
+                this.memoryStatus.disabled = true;
+
+                this.memoryStatus.msg = "反馈已记录..."
+            },
             tableRowClassName({
                 row,
                 rowIndex
@@ -211,7 +246,7 @@
             },
             // 是否加入记忆计划
             memory() {
-                axios.get('http://yanferr.com:8080/qa/ques/joinMemory', {
+                axios.get('http://localhost:8080/qa/ques/joinMemory', {
                         params: {
                             active: this.active,
                             quesId: this.quesId
@@ -254,7 +289,7 @@
                 this.searchQ();
             },
             top() { //置顶
-                axios.post("http://yanferr.com:8080/qa/ques/top",
+                axios.post("http://localhost:8080/qa/ques/top",
                         JSON.stringify(this.selectIds), {
                             headers: {
                                 'Content-Type': 'application/json'
@@ -275,7 +310,7 @@
                     });
             },
             topCancel() { //置顶
-                axios.post("http://yanferr.com:8080/qa/ques/topCancel",
+                axios.post("http://localhost:8080/qa/ques/topCancel",
                         JSON.stringify(this.selectIds), {
                             headers: {
                                 'Content-Type': 'application/json'
@@ -303,7 +338,7 @@
                     });
                     return;
                 }
-                axios.post("http://yanferr.com:8080/qa/ques/cancelHL",
+                axios.post("http://localhost:8080/qa/ques/cancelHL",
                         JSON.stringify(this.selectIds), {
                             headers: {
                                 'Content-Type': 'application/json'
@@ -330,7 +365,7 @@
                     });
             },
             searchQ() {
-                axios.post('http://yanferr.com:8080/qa/ques/search', {
+                axios.post('http://localhost:8080/qa/ques/search', {
                     recentDay: this.search.recentDay,
                     content: this.search.content,
                     labelName: this.search.labelName
@@ -351,7 +386,7 @@
                     return;
                 }
 
-                axios.post("http://yanferr.com:8080/qa/ques/delete",
+                axios.post("http://localhost:8080/qa/ques/delete",
                         JSON.stringify(this.selectIds), {
                             headers: {
                                 'Content-Type': 'application/json'
@@ -384,7 +419,7 @@
             },
             // 修改答案
             updateAnswer() {
-                axios.post('http://yanferr.com:8080/qa/answer/update', {
+                axios.post('http://localhost:8080/qa/answer/update', {
                     answerId: this.answerId,
                     answer: this.answer
                 }).then(res => {
@@ -414,8 +449,8 @@
             },
             submit() {
                 this.optionsValue = this.optionsValue.filter(item => item != null)
-                // http://yanferr.com:8080/qa/ques/save
-                axios.post('http://yanferr.com:8080/qa/ques/save', {
+                // http://localhost:8080/qa/ques/save
+                axios.post('http://localhost:8080/qa/ques/save', {
                     quesId: this.quesId,
                     answerId: this.answerId,
                     ques: this.ques,
@@ -430,11 +465,12 @@
                             duration: 500,
                             type: 'success'
                         });
-                        if (this.search === "") {
-                            this.getDataList();
-                        } else {
-                            this.searchQ();
-                        }
+                        this.getDataList();
+                        // if (this.search === "") {
+                        //     this.getDataList();
+                        // } else {
+                        //     this.searchQ();
+                        // }
                         this.drawer = false;
                         // this.active = !this.active;
                     } else {
@@ -469,7 +505,7 @@
                 this.submit();
             },
             getDataList() {
-                axios.get('http://yanferr.com:8080/qa/ques/list')
+                axios.get('http://localhost:8080/qa/ques/list')
                     .then(response => {
                         this.tableData = response.data.page.list;
                         this.getImgPath();
@@ -480,7 +516,7 @@
                     });
             },
             loadLabels() {
-                axios.get('http://yanferr.com:8080/qa/label/list')
+                axios.get('http://localhost:8080/qa/label/list')
                     .then(res => {
                         if (res && res.data.code === 0) {
                             // console.log(res.data.page.list);
@@ -491,7 +527,7 @@
                     })
             },
             lablesWithQuesId(quesId) {
-                axios.get(`http://yanferr.com:8080/qa/label/labels/${quesId}`)
+                axios.get(`http://localhost:8080/qa/label/labels/${quesId}`)
 
                     .then(res => {
                         var data = res.data.data;
@@ -507,6 +543,9 @@
             },
             //行双击事件
             rowClick(row, column, event) {
+                this.memoryStatus.disabled = false;
+                this.memoryStatus.msg = "忘了";
+                this.memoryStatus.master = null;
                 this.optionsValue = [];
                 this.lablesWithQuesId(row.quesId);
                 this.quesId = row.quesId;
@@ -521,15 +560,25 @@
                 this.source = row.source;
                 this.disableswitch = this.memoryLevel >= 9;
                 this.active = row.highLight >= 0 ? "true" : "false";
-                this.nextLevelImg = "./pic/lv" + (this.memoryLevel + 1) + ".png";
-                // this.highLight = row.highLight;
+                this.highLight = row.highLight;
+                this.getNextLevelImg(this.memoryLevel); // 计算下个等级图片
+
                 // this.levelImg = "./pic/lv" + memoryLevel + ".png",
 
                 // 更新lastView、重新计算highLight
                 this.updateHighLight(this.quesId);
             },
+            getNextLevelImg() {
+                if (this.highLight === 1) {
+                    this.nextLevelImg = "./pic/lv" + (this.memoryLevel + 1) + ".png";
+                }
+                if (this.highLight === 2) {
+                    var t = this.memoryLevel === 1 ? this.memoryLevel : this.memoryLevel - 1;
+                    this.nextLevelImg = "./pic/lv" + t + ".png";
+                }
+            },
             updateHighLight(quesId) {
-                axios.get(`http://yanferr.com:8080/qa/ques/updateHighLight/${quesId}`)
+                axios.get(`http://localhost:8080/qa/ques/updateHighLight/${quesId}`)
                     .then(response => {
 
                     })
@@ -538,45 +587,61 @@
                     });
             },
             updateHighLightBatch() {
-                axios.post(`http://yanferr.com:8080/qa/ques/updateHighLightBatch`,
-                    JSON.stringify(this.selectIds), {
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
+                // todo: 剔除selectIds中不是高亮的
+                this.updateLevelRecordBatch();
+                axios.post(`http://localhost:8080/qa/ques/updateHighLightBatch`,
+                        JSON.stringify(this.selectIds), {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                    .then(response => {
+                        this.getDataList();
                     })
-            .then(response => {
-                this.getDataList();
-            })
-            .catch(function (error) { // 请求失败处理
-                alert("lastView更新失败")
-            });
+                    .catch(function (error) { // 请求失败处理
+                        alert("lastView更新失败")
+                    });
+            },
+            updateLevelRecordBatch(){
+                axios.post(`http://localhost:8080/qa/levelRecord/batchSou`,
+                        JSON.stringify(this.selectIds), {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                    .then(response => {
+                       
+                    })
+                    .catch(function (error) { // 请求失败处理
+                        alert("levelRecord更新失败")
+                    });
+            },
+            getAnswerById(answerId) {
+                axios.get(`http://localhost:8080/qa/answer/info/${answerId}`)
+                    .then(response => {
+                        this.answer = response.data.answer.answer;
+                    })
+                    .catch(function (error) { // 请求失败处理
+                        console.log(error);
+                    });
+            },
         },
-        getAnswerById(answerId) {
-            axios.get(`http://yanferr.com:8080/qa/answer/info/${answerId}`)
-                .then(response => {
-                    this.answer = response.data.answer.answer;
-                })
-                .catch(function (error) { // 请求失败处理
-                    console.log(error);
-                });
-        },
-    },
-    mounted() {
-        this.getDataList();
-        this.loadLabels();
-        if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
-            this.isPhone = true;
-            // window.location.href = "mindex.html";
+        mounted() {
+            this.getDataList();
+            this.loadLabels();
+            if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
+                this.isPhone = true;
+                // window.location.href = "mindex.html";
 
-        } else {
-            this.isPhone = false;
-            // $(document).ready(function () {
-            //     $(".el-card__body,.el-main").css("width", "96%");
-            // });
+            } else {
+                this.isPhone = false;
+                // $(document).ready(function () {
+                //     $(".el-card__body,.el-main").css("width", "96%");
+                // });
+            }
+            // 监听页面滚动事件
+            // window.addEventListener("scroll", this.showSearch);
         }
-        // 监听页面滚动事件
-        // window.addEventListener("scroll", this.showSearch);
-    }
     })
 </script>
 <style scoped>

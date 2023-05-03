@@ -54,7 +54,9 @@
 <script src="./js/vue.js"></script>
 <script src="./js/index.js"></script>
 <script src="./js/jquery-1.11.3.js"></script>
+<script src="./api/quesApi.js"></script>
 <script>
+    
     new Vue({
         el: '#app',
         data() {
@@ -96,6 +98,7 @@
                     }
                 }
             },
+            
             // 上传
             handleChange(file, filelist) {
                 console.log(file, filelist)
